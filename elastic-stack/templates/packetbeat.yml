@@ -1,0 +1,62 @@
+###################### Packetbeat Configuration Example #######################
+
+#============================== Network device ================================
+
+packetbeat.interfaces.device: any
+
+#================================== Flows =====================================
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+#========================== Transaction protocols =============================
+
+packetbeat.protocols:
+- type: icmp
+- type: dns
+  ports: [53]
+  include_authorities: true
+  include_additionals: true
+- type: http
+  ports: [80, 5601]
+- type: redis
+  ports: [6379]
+- type: mongodb
+  ports: [27017]
+
+#================================ Processors ===================================
+
+processors:
+- add_docker_metadata: ~
+- add_host_metadata: ~
+
+#================================ Outputs ======================================
+
+#-------------------------- Elasticsearch output -------------------------------
+output.elasticsearch:
+  enabled: false
+  hosts: ["http://localhost:9200"]
+
+#------------------------------- Redis output ----------------------------------
+output.redis:
+  enabled: true
+  hosts: ["localhost:6379"]
+  datatype: "list"
+  key: "packetbeat"
+  bulk_max_size: 100 # Fixing occasional "Failed to read integer reply: Expected digit" errors
+
+#============================== Kibana =====================================
+
+setup:
+  kibana.host: "localhost:5601"
+  dashboards:
+    enabled: true
+    always_kibana: true #Only talk to Kibana, which is important for the retry
+    retry.enabled: true #Retry in case Kibana is not up yet
+
+#============================== Xpack Monitoring =====================================
+
+xpack.monitoring:
+  enabled: true
+  elasticsearch.hosts: ["localhost:9200"] #Required if you connect through Logstash

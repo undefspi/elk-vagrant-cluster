@@ -1,0 +1,20 @@
+es-master-nodes: # group i.e if using normal ini file [es-master-nodes]
+  hosts:
+    es-master-1:                    # hostname
+      ansible_host: 192.168.33.25   # ip address
+      ansible_user: vagrant
+      memory: 4096                  # ram to be assigned in MB
+      ansible_ssh_private_key_file: /elastic/.vagrant/machines/es-master-1/virtualbox/private_key
+es-data-nodes:
+  hosts:
+    es-data-1:
+      ansible_host: 192.168.33.26
+      ansible_user: vagrant
+      memory: 4096
+      ansible_ssh_private_key_file: /elastic/.vagrant/machines/es-data-1/virtualbox/private_key
+
+    es-data-2:
+      ansible_host: 192.168.33.27
+      ansible_user: vagrant
+      memory: 4096
+      ansible_ssh_private_key_file: /elastic/.vagrant/machines/es-data-2/virtualbox/private_key

@@ -1,0 +1,7 @@
+.vagrant/
+elastic-stack/1_*
+elastic-stack/2_*
+elastic-stack/3_*
+elastic-stack/4_*
+elastic-stack/5_*
+elastic-stack/raffle
