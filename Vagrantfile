@@ -12,9 +12,11 @@ inventory = YAML.load_file("elastic-stack/inventory.yml")   # Get the names & ip
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.synced_folder '.', '/elastic',
-        owner: "vagrant",
-        mount_options: ["dmode=775,fmode=600"],
-        resync: true
+         owner: "vagrant",
+         mount_options: ["dmode=775,fmode=600"],
+         resync: true
+
+    config.vm.provision :shell, :inline => "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config; sudo systemctl restart sshd;", run: "always"
     
     inventory.each do |group_k, grouphosts_v|
         grouphosts_v['hosts'].each do | hostname_k, hostinfo_v |
@@ -37,11 +39,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         machine.vm.hostname = "controller"
         machine.vm.network "private_network", ip: "192.168.33.20"
         machine.vm.provision :ansible_local do |ansible|
-          ansible.playbook       = "/elastic/elastic-stack/0_install.yml"
+          ansible.playbook       = "/elastic/elastic-stack/site.yml"
           ansible.verbose        = true
           ansible.install        = true
           ansible.config_file    = "/vagrant/elastic-stack/ansible.cfg"
           ansible.limit          = "all" # or only "nodes" group, etc.
+          ansible.tags           = "configure"
           ansible.inventory_path = "/elastic/elastic-stack/inventory.yml"
           ansible.galaxy_role_file = "/elastic/elastic-stack/requirements.yml"
           ansible.galaxy_command = "ansible-galaxy install --role-file=%{role_file} --force"

@@ -1,3 +1,4 @@
 --- 
 - src: elastic.elasticsearch
   version: 7.1.1
+- src: suzuki-shunsuke.docker_ce_centos

@@ -1,0 +1,4 @@
+---
+
+docker_centos_users: ["vagrant"]
+docker_centos_state: "started"

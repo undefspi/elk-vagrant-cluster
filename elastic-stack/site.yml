@@ -1,13 +1,47 @@
 ---
+- hosts: logstash-nodes, kibana-nodes
+  become: true
+  tasks:
+    - name: Install Vim, because plain Vi is driving me crazy
+      yum: name=vim state=latest
+
+    - name: Install cURL for testing
+      yum: name=curl state=latest
+
+    - name: Install NTP to avoid time drift inside the VM
+      yum: name={{ item }} state=latest
+      loop:
+        - ntp
+        - ntpdate
+
+    - name: Install java jdk
+      yum: 
+        name: java-11-openjdk
+        state: present
+    
+    - name: Get rpm public signing
+      shell: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+    - name: Add Elastic Repo
+      template:
+        src: templates/logstash/elastic.repos.j2
+        dest: /etc/yum.repos.d/elastic.repo
+        owner: root
+        group: root
+        mode: 0600
+   
 
 - hosts: es-master-nodes, es-data-nodes
   become: true
   roles:
     - role: elastic.elasticsearch
 
+- hosts: logstash-nodes
+  become: true
+  roles:
+    - role: suzuki-shunsuke.docker_ce_centos
+
   tasks:
-  - debug:
-      var: masterHosts_transport
   - name: Get the platform (i386 or amd64) of the virtual machine
     command: arch
     register: print_architecture
@@ -16,23 +50,33 @@
     set_fact:
       platform: "{{ print_architecture.stdout }}"
 
+  # - name: install epel
+  #   become: true
+  #   yum: 
+  #     name: epel-release
+
+  # - name: install pip docker-py
+  #   become: true
+  #   pip:
+  #     name: docker-py
+
+  # - name: Get Logstash Docker Image
+  #   docker_container:
+  #     name: logstash
+  #     image: docker.elastic.co/logstash/logstash:7.1.1
+  #     state: started
+  #     restart_policy: always
+  #     published_ports:
+  #       - 9600:9600
+  #       - 5044:5044
+  #     volumes:
+  #       - /elastic/elastic-stack/templates/logstash/pipeline/:/usr/share/logstash/pipeline/
+  #       - /elastic/elastic-stack/templates/logstash/settings/logstash.yml:/usr/share/logstash/config/logstash.yml
+
   # - name: Install unzip for unpacking files later on
   #   apt: name=unzip state=latest
 
-  # - name: Install Vim, because plain Vi is driving me crazy
-  #   apt: name=vim state=latest
 
-  # - name: Install cURL for testing
-  #   apt: name=curl state=latest
-
-  # - name: Install NTP to avoid time drift inside the VM
-  #   apt: name={{ item }} state=latest
-  #   loop:
-  #     - ntp
-  #     - ntpdate
-
-  # - name: Install the JRE
-  #   apt: name=openjdk-8-jre-headless state=latest update_cache=yes install_recommends=no
 
   # - name: Install pip to get current Python dependencies
   #   apt: name=python-pip state=latest
@@ -157,16 +201,14 @@
   #   service: name=elasticsearch enabled=yes state=stopped
 
 
-  # - name: Get Logstash
-  #   get_url:
-  #     url={{ elastic_download }}/downloads/logstash/logstash-{{ elastic_version }}.deb
-  #     dest=/opt/logstash.deb
 
-  # - name: Install Logstash
-  #   apt: deb=/opt/logstash.deb
+  - name: Install Logstash
+    yum: 
+      name: logstash-{{ elastic_version }}
+      state: present
 
-  # - name: Make sure Logstash autostarts, but is stopped until it is properly configured
-  #   service: name=logstash enabled=yes state=stopped
+  - name: Make sure Logstash autostarts, but is stopped until it is properly configured
+    service: name=logstash enabled=yes state=stopped
 
 
   # - name: Get the Beats
@@ -179,6 +221,7 @@
   #     - heartbeat
   #     - metricbeat
   #     - packetbeat
+
 
   # - name: Install the Beats
   #   apt: deb=/opt/{{ item }}.deb
@@ -234,3 +277,20 @@
   #     url=https://download.elastic.co/workshops/basic-kibana/injector/injector-{{ injector_version }}.jar
   #     dest=/opt/injector.jar
   #     mode=0755
+
+- hosts: kibana-nodes
+  become: true
+
+  tasks:
+    - name: Install kibana
+      yum: 
+        name: kibana-{{ elastic_version }}
+        state: present
+
+    - name: Make sure kibana autostarts, but is stopped until it is properly configured
+      service: name=logstash enabled=yes state=stopped
+
+      
+- import_playbook: 3_configure-logstash.yml
+  tags: [ configure ]
+
