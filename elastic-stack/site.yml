@@ -1,6 +1,7 @@
 ---
-- hosts: logstash-nodes, kibana-nodes
+- hosts: all
   become: true
+  tags: [ kibana, logstash, elastic, filebeats ]
   tasks:
     - name: Install Vim, because plain Vi is driving me crazy
       yum: name=vim state=latest
@@ -13,11 +14,6 @@
       loop:
         - ntp
         - ntpdate
-
-    - name: Install java jdk
-      yum: 
-        name: java-11-openjdk
-        state: present
     
     - name: Get rpm public signing
       shell: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
@@ -35,11 +31,31 @@
   become: true
   roles:
     - role: elastic.elasticsearch
+  tags: [ elastic ]
+
+- hosts: logstash-nodes
+  become: true
+  tags: [ logstash ]
+
+  tasks:
+  - name: Install java jdk
+    yum:
+      name: java-11-openjdk
+      state: present
+
+  - name: Install Logstash
+    yum: 
+      name: logstash-{{ elastic_version }}
+      state: present
+
+  - name: Make sure Logstash autostarts, but is stopped until it is properly configured
+    service: name=logstash enabled=yes state=stopped
 
 - hosts: logstash-nodes
   become: true
   roles:
     - role: suzuki-shunsuke.docker_ce_centos
+  tags: [ logstash-docker ]
 
   tasks:
   - name: Get the platform (i386 or amd64) of the virtual machine
@@ -49,6 +65,8 @@
   - name: And set the actual platform value as a variable
     set_fact:
       platform: "{{ print_architecture.stdout }}"
+
+ 
 
   # - name: install epel
   #   become: true
@@ -202,13 +220,6 @@
 
 
 
-  - name: Install Logstash
-    yum: 
-      name: logstash-{{ elastic_version }}
-      state: present
-
-  - name: Make sure Logstash autostarts, but is stopped until it is properly configured
-    service: name=logstash enabled=yes state=stopped
 
 
   # - name: Get the Beats
@@ -280,17 +291,36 @@
 
 - hosts: kibana-nodes
   become: true
-
+  tags: [ kibana ]
   tasks:
+    - name: Install java jdk
+      yum:
+        name: java-11-openjdk
+        state: present
+
     - name: Install kibana
       yum: 
         name: kibana-{{ elastic_version }}
         state: present
 
     - name: Make sure kibana autostarts, but is stopped until it is properly configured
-      service: name=logstash enabled=yes state=stopped
+      service: name=kibana enabled=yes state=stopped
 
-      
+- hosts: filebeat-nodes
+  become: true
+  tags: [ filebeats ]
+
+  tasks:
+     - name: Install filebeat
+       yum: 
+        name: filebeat-{{ elastic_version }}
+        state: present
+
+     - name: Make sure kibana autostarts, but is stopped until it is properly configured
+       service: name=filebeat enabled=yes state=stopped
+   
 - import_playbook: 3_configure-logstash.yml
   tags: [ configure ]
 
+- import_playbook: 2_configure-kibana.yml
+  tags: [ configure ]

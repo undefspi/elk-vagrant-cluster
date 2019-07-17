@@ -1,3 +1,5 @@
+
+
 es-master-nodes: # group i.e if using normal ini file [es-master-nodes]
   hosts:
     es-master-1:                    # hostname
@@ -35,3 +37,11 @@ es-data-nodes:
       ansible_user: vagrant
       memory: 4096
       ansible_ssh_private_key_file: /elastic/.vagrant/machines/es-data-2/virtualbox/private_key
+
+filebeat-nodes:
+  hosts:
+    filebeat-1:
+      ansible_host: 192.168.33.30
+      ansible_user: vagrant
+      memory: 512
+      ansible_ssh_private_key_file: /elastic/.vagrant/machines/filebeat-1/virtualbox/private_key

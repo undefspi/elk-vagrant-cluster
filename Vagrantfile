@@ -44,7 +44,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           ansible.install        = true
           ansible.config_file    = "/vagrant/elastic-stack/ansible.cfg"
           ansible.limit          = "all" # or only "nodes" group, etc.
-          ansible.tags           = "configure"
+          ansible.tags           = [ "filebeats", "logstash" ]
           ansible.inventory_path = "/elastic/elastic-stack/inventory.yml"
           ansible.galaxy_role_file = "/elastic/elastic-stack/requirements.yml"
           ansible.galaxy_command = "ansible-galaxy install --role-file=%{role_file} --force"
